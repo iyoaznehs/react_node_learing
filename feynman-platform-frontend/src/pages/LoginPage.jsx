@@ -8,6 +8,7 @@ function LoginPage() {
   // 2. 使用 useState 创建状态变量
   // email 是状态值，setEmail 是更新这个值的函数
   const [email, setEmail] = useState(''); 
+  const [errmsg, setErrmsg] = useState('');
   const [password, setPassword] = useState('');
   const { login } = useAuth(); // 从Context中获取login函数
   const navigate = useNavigate();
@@ -15,20 +16,27 @@ function LoginPage() {
   const handleSubmit = async(event) => {
     event.preventDefault(); // 阻止表单默认的提交刷新行为
     console.log('正在尝试登录:', { email, password });
-    // 下节课我们会在这里调用API
    try {
       const response = await apiClient.post('/users/login', { email, password });
-      //console.log('登录成功，Token:', response.data.token);
-      login(response.data.token); // 调用Context的login函数来更新全局token
+      // 0 成功， 1 失败
+      if (response.data.code === 0) {
+        console.log('登录成功:', response.data.msg);
+      }else {
+        throw new Error(response.data.msg.message || '登录失败');
+      }
+      login(response.data.data.token); // 调用Context的login函数来更新全局token
       navigate('/'); // 登录成功后跳转到主页
     } catch (err) {
-      console.error('登录失败：', err);
+      console.error('登录失败:', err.message);
+      // 让用户重新尝试登录，刷新页面
+      setErrmsg('登录失败: ' + err.message + '，请重试。');
     }
   };
 
   return (
     <div>
       <h1>登录</h1>
+      {errmsg && <p style={{ color: 'red' }}>{errmsg}</p>}
       <form onSubmit={handleSubmit}>
         <div>
           <label>邮箱:</label>

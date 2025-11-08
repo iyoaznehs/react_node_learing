@@ -117,3 +117,5 @@ temp/
 
 # Custom directories
 codebuddy/
+
+.vscode

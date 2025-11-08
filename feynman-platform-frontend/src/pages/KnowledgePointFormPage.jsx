@@ -19,11 +19,15 @@ function KnowledgePointFormPage() {
         const fetchKp = async () => {
             try {
                 const res = await apiClient.get(`/knowledge-points/${id}`);
-                const kp = res.data;
+                if (res.data.code !== 0) {
+                    throw new Error(res.data.msg || '获取知识点失败');
+                }
+                const kp = res.data.data.kp;
                 setTitle(kp.title || '');
                 setContent(kp.content || '');
             } catch (err) {
                 console.error('获取知识点失败', err);
+                alert('获取知识点失败，请重试');
             }
         };
         fetchKp();
@@ -35,11 +39,17 @@ function KnowledgePointFormPage() {
         const kpData = { title, content };
         try {
             if (isEditing) {
-                await apiClient.put(`/knowledge-points/${id}`, kpData);
+                const response = await apiClient.put(`/knowledge-points/${id}`, kpData);
+                if (response.data.code !== 0) {
+                    throw new Error(response.data.msg || '更新知识点失败');
+                }
             } else {
-                await apiClient.post('/knowledge-points', kpData);
+                const response = await apiClient.post('/knowledge-points', kpData);
+                if (response.data.code !== 0) {
+                    throw new Error(response.data.msg || '创建知识点失败');
+                }
             }
-            navigate('/');
+            // navigate('/');
         } catch (error) {
             console.error('保存知识点失败', error);
         }
