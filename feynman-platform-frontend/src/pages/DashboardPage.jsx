@@ -27,16 +27,13 @@ function DashboardPage() {
                     return;
                 }
                 const response = await apiClient.get('/knowledge-points');
-                setKnowledgePoints(response.data);
-            } catch (err) {
-                if (err.response?.status === 401) {
-                    setError('登录已过期，请重新登录');
-                    // 清除过期的token
-                    localStorage.removeItem('token');
-                } else {
-                    setError('获取知识点失败');
+                if (response.data.code !== 0) {
+                    throw new Error(response.data.msg || '获取知识点失败');
                 }
-                console.error(err);
+                setKnowledgePoints(response.data.data.kps);
+            } catch (err) {
+                setError(err.message);
+                console.error('获取知识点失败', err);
             } finally {
                 setLoading(false);
             }
@@ -49,17 +46,15 @@ function DashboardPage() {
     const handleDelete = async (id) => {
         if (window.confirm('你确定要删除这个知识点吗？')) {
             try {
-                await apiClient.delete(`/knowledge-points/${id}`);
+                const response = await apiClient.delete(`/knowledge-points/${id}`);
+                if (response.data.code !== 0) {
+                    throw new Error(response.data.msg || '删除知识点失败');
+                }
                 // 从前端状态中移除被删除的项，避免刷新页面
                 setKnowledgePoints(knowledgePoints.filter(kp => kp._id !== id));
             } catch (error) {
-                if (error.response?.status === 401) {
-                    alert('登录已过期，请重新登录');
-                    localStorage.removeItem('token');
-                } else {
-                    alert('删除失败，请重试');
-                }
-                console.error('删除失败', error);
+                console.log(error.message);
+                alert('删除失败，请重试');
             }
         }
     };

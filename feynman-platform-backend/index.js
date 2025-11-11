@@ -55,6 +55,10 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/knowledge-points', require('./routes/knowledgePoints'));
 app.use('/api/audio', require('./routes/audio'));
 
+// --- 错误处理中间件 ---
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler); 
+
 app.listen(port, () => {
   console.log(`Feynman Platform backend is running at http://localhost:${port}`);
 });

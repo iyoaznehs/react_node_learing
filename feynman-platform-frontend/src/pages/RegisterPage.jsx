@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import apiClient from '../api/axios'; // 1. 引入apiClient
 import { useNavigate } from 'react-router-dom'; // 2. 引入useNavigate用于跳转
+import { useAuth } from '../context/useAuth';
 
 function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -11,6 +12,7 @@ function RegisterPage() {
   });
   const [error, setError] = useState('');
   const navigate = useNavigate(); // 3. 获取navigate函数
+  const { login } = useAuth(); // 从Context中获取login函数
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -22,9 +24,15 @@ function RegisterPage() {
     try {
       // 5. 使用apiClient发送POST请求
       const response = await apiClient.post('/users/register', formData);
-      console.log('注册成功:', response.data);
-      // 6. 注册成功后跳转到登录页
-      navigate('/login');
+      if (response.data.code == 0) {
+        console.log('注册成功:', response.data);
+        // 这里注册的时候返回了token，直接登录把
+        login(response.data.data.token);
+      } else {
+        throw new Error(response.data.msg || '注册失败');
+      }
+      // 6. 注册成功后跳转到主页
+      navigate('/');
     } catch (err) {
       console.error('注册失败:', err.response.data);
       setError(err.response.data.msg || '注册失败，请稍后再试'); // 7. 显示错误信息
