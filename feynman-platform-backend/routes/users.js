@@ -1,4 +1,5 @@
 // routes/users.js
+const AppError = require('../utils/appError')
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs'); // 引入加密库
@@ -9,19 +10,19 @@ const User = require('../models/User');
 // @route   POST /api/users/register
 // @desc    注册一个新用户
 // @access  Public
-router.post('/register', async (req, res) => {
+router.post('/register', async (req, res, next) => {
     try {
-        const { name, email, password } = req.body;
+        const { username, email, password } = req.body;
 
         // 1. 检查用户是否已存在
         let user = await User.findOne({ email });
         if (user) {
-            return res.status(400).json({ msg: 'User already exists' });
+            throw new AppError("User already exists")
         }
 
         // 2. 创建新用户实例
         user = new User({
-            name,
+            username,
             email,
             password
         });
@@ -48,14 +49,19 @@ router.post('/register', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '5h' },
             (err, token) => {
-                if (err) throw err;
-                res.json({ token });
+                if (err) throw new AppError("TokenGenerationError", 500);
+                res.json({
+                    code : 0,
+                    msg  : "Registration successful",
+                    data : {
+                        token : token
+                    }
+                });
             }
         );
 
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        next(err)
     }
 });
 
@@ -63,14 +69,14 @@ router.post('/register', async (req, res) => {
 // @route   POST /api/users/login
 // @desc    用户登录并获取token
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
         // 1. 检查用户是否存在
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
+            throw new AppError("LoginError", 1)
         }
 
         // 2. 【安全核心】比较密码
@@ -78,7 +84,7 @@ router.post('/login', async (req, res) => {
         // 它会自动处理盐值，我们无需关心。只有密码匹配，才会返回true。
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ msg: 'Invalid Credentials' });
+            throw new AppError("LoginError", 200)
         }
 
         // 3. 登录成功，生成JWT
@@ -94,13 +100,19 @@ router.post('/login', async (req, res) => {
             { expiresIn: '5h' },
             (err, token) => {
                 if (err) throw err;
-                res.json({ token });
+                res.json(
+                    {
+                        code : 0,
+                        msg  : "Login successful",
+                        data : {
+                            token : token
+                        }
+                    });
             }
         );
 
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        next(err)
     }
 });
 

@@ -14,6 +14,10 @@ function FeynmanRecordPage() {
         // 获取知识点标题用于显示
         const fetchKpTitle = async () => {
             const response = await apiClient.get(`/knowledge-points/${id}`);
+            if (response.data.code !== 0) {
+                console.error('获取知识点失败');
+                return;
+            }
             setKpTitle(response.data.title);
         };
         fetchKpTitle();
@@ -35,7 +39,9 @@ function FeynmanRecordPage() {
                     'Content-Type': 'multipart/form-data',
                 },
             });
-            
+            if (response.data.code !== 0) {
+                throw new Error('转录失败: ' + response.data.msg);
+            }
             setTranscribedText(response.data.result);
         } catch (error) {
             console.error('上传或转录失败', error);

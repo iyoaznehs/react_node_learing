@@ -1,3 +1,5 @@
+const AppError = require("../utils/appError");
+
 // controllers/baiduAiController.js
 const AipSpeechClient = require("baidu-aip-sdk").speech;
 
@@ -9,7 +11,7 @@ const SECRET_KEY = process.env.BAIDU_SECRET_KEY;
 // 新建一个AipSpeechClient对象
 const client = new AipSpeechClient(APP_ID, API_KEY, SECRET_KEY);
 
-exports.transcribeAudio = async (req, res) => {
+exports.transcribeAudio = async (req, res, next) => {
     if (!req.file) {
         return res.status(400).json({ msg: 'No audio file uploaded.' });
     }
@@ -29,14 +31,17 @@ exports.transcribeAudio = async (req, res) => {
         // 检查返回结果
         if (result.err_no === 0) {
             // 成功
-            res.json({ result: result.result[0] });
+            res.json({
+                code: 0,
+                msg: "转录成功",
+                result: result.result[0]
+            });
         } else {
             // 失败
-            res.status(500).json({ msg: 'Baidu ASR service error', error: result });
+            throw new AppError(`Baidu ASR error: ${result.err_msg} (code: ${result.err_no})`);
         }
 
     } catch (error) {
-        console.error('Error calling Baidu ASR API:', error);
-        res.status(500).send('Server error during transcription.');
+        next(error);
     }
 };

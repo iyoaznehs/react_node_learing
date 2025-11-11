@@ -1,0 +1,620 @@
+{
+  "info": {
+    "name": "Feynman学习平台-自动化测试",
+    "description": "基于费曼学习法的全栈学习平台API集合 - 包含完整的自动化测试脚本",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "knowledgePointId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testUserEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "testUsername",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "初始化测试数据",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 生成唯一的测试用户数据",
+              "const timestamp = new Date().getTime();",
+              "const randomNum = Math.floor(Math.random() * 1000);",
+              "const testEmail = `testuser_${timestamp}_${randomNum}@example.com`;",
+              "const testUsername = `testuser_${timestamp}_${randomNum}`;",
+              "",
+              "// 设置测试用户变量",
+              "pm.collectionVariables.set('testUserEmail', testEmail);",
+              "pm.collectionVariables.set('testUsername', testUsername);",
+              "",
+              "console.log('生成的测试用户:', testEmail);",
+              "console.log('测试用户名:', testUsername);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "用户注册",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 准备注册数据",
+              "const testEmail = pm.collectionVariables.get('testUserEmail');",
+              "const testUsername = pm.collectionVariables.get('testUsername');",
+              "",
+              "// 更新请求体",
+              "const requestBody = {",
+              "  username: testUsername,",
+              "  email: testEmail,",
+              "  password: 'password123'",
+              "};",
+              "",
+              "pm.request.body.raw = JSON.stringify(requestBody, null, 2);",
+              "console.log('注册请求数据:', requestBody);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 测试用户注册响应",
+              "pm.test(\"状态码为200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"响应结构正确\", function () {",
+              "    var responseData = pm.response.json();",
+              "    pm.expect(responseData).to.have.property('code', 0);",
+              "    pm.expect(responseData).to.have.property('msg', 'Registration successful');",
+              "    pm.expect(responseData).to.have.property('data');",
+              "    pm.expect(responseData.data).to.have.property('token');",
+              "    pm.expect(responseData.data.token).to.be.a('string');",
+              "});",
+              "",
+              "// 保存token到环境变量",
+              "if (pm.response.code === 200) {",
+              "    var responseData = pm.response.json();",
+              "    if (responseData.code === 0) {",
+              "        pm.collectionVariables.set('token', responseData.data.token);",
+              "        console.log('注册成功，Token已保存: ' + responseData.data.token);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{testUsername}}\",\n  \"email\": \"{{testUserEmail}}\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/register",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "register"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "用户登录",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 准备登录数据",
+              "const testEmail = pm.collectionVariables.get('testUserEmail');",
+              "",
+              "// 更新请求体",
+              "const requestBody = {",
+              "  email: testEmail,",
+              "  password: 'password123'",
+              "};",
+              "",
+              "pm.request.body.raw = JSON.stringify(requestBody, null, 2);",
+              "console.log('登录请求数据:', requestBody);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 测试用户登录响应",
+              "pm.test(\"状态码为200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"登录成功\", function () {",
+              "    var responseData = pm.response.json();",
+              "    pm.expect(responseData).to.have.property('code', 0);",
+              "    pm.expect(responseData).to.have.property('msg', 'Login successful');",
+              "    pm.expect(responseData).to.have.property('data');",
+              "    pm.expect(responseData.data).to.have.property('token');",
+              "    pm.expect(responseData.data.token).to.be.a('string').and.to.not.be.empty;",
+              "});",
+              "",
+              "// 保存token到环境变量",
+              "if (pm.response.code === 200) {",
+              "    var responseData = pm.response.json();",
+              "    if (responseData.code === 0) {",
+              "        pm.collectionVariables.set('token', responseData.data.token);",
+              "        console.log('登录成功，Token已保存: ' + responseData.data.token);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{testUserEmail}}\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/users/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "users", "login"]
+        }
+      },
+      "response": []
+    },
+        {
+          "name": "创建知识点",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 验证token是否存在",
+                  "const token = pm.collectionVariables.get('token');",
+                  "if (!token) {",
+                  "    throw new Error('Token未找到，请先执行登录操作');",
+                  "}",
+                  "",
+                  "// 设置x-auth-token头部",
+                  "pm.request.headers.upsert({",
+                  "    key: 'x-auth-token',",
+                  "    value: token",
+                  "});",
+                  "",
+                  "console.log('使用Token:', token);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 测试创建知识点响应",
+                  "pm.test(\"状态码为200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"知识点创建成功\", function () {",
+                  "    var responseData = pm.response.json();",
+                  "    pm.expect(responseData).to.have.property('code', 0);",
+                  "    pm.expect(responseData).to.have.property('msg', '添加成功');",
+                  "    pm.expect(responseData).to.have.property('data');",
+                  "    pm.expect(responseData.data).to.have.property('kp');",
+                  "    pm.expect(responseData.data.kp).to.have.property('_id');",
+                  "    pm.expect(responseData.data.kp).to.have.property('title', '微积分基本定理');",
+                  "    pm.expect(responseData.data.kp).to.have.property('content');",
+                  "    pm.expect(responseData.data.kp).to.have.property('user');",
+                  "    pm.expect(responseData.data.kp).to.have.property('status', 'not_started');",
+                  "    pm.expect(responseData.data.kp).to.have.property('reviewList', false);",
+                  "});",
+                  "",
+                  "// 保存知识点ID到环境变量",
+                  "if (pm.response.code === 200) {",
+                  "    var responseData = pm.response.json();",
+                  "    if (responseData.code === 0 && responseData.data.kp) {",
+                  "        pm.collectionVariables.set('knowledgePointId', responseData.data.kp._id);",
+                  "        console.log('知识点创建成功，ID已保存: ' + responseData.data.kp._id);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "x-auth-token",
+                "value": "{{token}}"
+              }
+            ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"微积分基本定理\",\n  \"content\": \"微积分基本定理描述了微分和积分之间的关系。它指出：如果函数f在区间[a,b]上连续，那么函数F(x) = ∫[a,x] f(t) dt在[a,b]上可导，并且F'(x) = f(x)。\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-points",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-points"]
+        }
+      },
+      "response": []
+    },
+        {
+          "name": "获取知识点列表",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 验证token是否存在",
+                  "const token = pm.collectionVariables.get('token');",
+                  "if (!token) {",
+                  "    throw new Error('Token未找到，请先执行登录操作');",
+                  "}",
+                  "",
+                  "// 设置x-auth-token头部",
+                  "pm.request.headers.upsert({",
+                  "    key: 'x-auth-token',",
+                  "    value: token",
+                  "});"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 测试获取知识点列表响应",
+                  "pm.test(\"状态码为200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"知识点列表获取成功\", function () {",
+                  "    var responseData = pm.response.json();",
+                  "    pm.expect(responseData).to.have.property('code', 0);",
+                  "    pm.expect(responseData).to.have.property('msg', '获取成功');",
+                  "    pm.expect(responseData).to.have.property('data');",
+                  "    pm.expect(responseData.data).to.have.property('kps');",
+                  "    pm.expect(responseData.data.kps).to.be.an('array');",
+                  "    ",
+                  "    // 如果有知识点，检查第一个知识点的结构",
+                  "    if (responseData.data.kps.length > 0) {",
+                  "        var firstKp = responseData.data.kps[0];",
+                  "        pm.expect(firstKp).to.have.property('_id');",
+                  "        pm.expect(firstKp).to.have.property('title');",
+                  "        pm.expect(firstKp).to.have.property('content');",
+                  "        pm.expect(firstKp).to.have.property('user');",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth-token",
+                "value": "{{token}}"
+              }
+            ],
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-points",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-points"]
+        }
+      },
+      "response": []
+    },
+        {
+          "name": "获取单个知识点",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 验证token和知识点ID是否存在",
+                  "const token = pm.collectionVariables.get('token');",
+                  "const knowledgePointId = pm.collectionVariables.get('knowledgePointId');",
+                  "if (!token) {",
+                  "    throw new Error('Token未找到，请先执行登录操作');",
+                  "}",
+                  "if (!knowledgePointId) {",
+                  "    throw new Error('知识点ID未找到，请先创建知识点');",
+                  "}",
+                  "",
+                  "// 设置x-auth-token头部",
+                  "pm.request.headers.upsert({",
+                  "    key: 'x-auth-token',",
+                  "    value: token",
+                  "});",
+                  "",
+                  "// 更新URL中的知识点ID",
+                  "const url = pm.request.url.toString();",
+                  "pm.request.url = url.replace('{{knowledgePointId}}', knowledgePointId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// 测试获取单个知识点响应",
+                  "pm.test(\"状态码为200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"单个知识点获取成功\", function () {",
+                  "    var responseData = pm.response.json();",
+                  "    pm.expect(responseData).to.have.property('code', 0);",
+                  "    pm.expect(responseData).to.have.property('msg', '获取成功');",
+                  "    pm.expect(responseData).to.have.property('data');",
+                  "    pm.expect(responseData.data).to.have.property('kp');",
+                  "    pm.expect(responseData.data.kp).to.have.property('_id', pm.collectionVariables.get('knowledgePointId'));",
+                  "    pm.expect(responseData.data.kp).to.have.property('title');",
+                  "    pm.expect(responseData.data.kp).to.have.property('content');",
+                  "    pm.expect(responseData.data.kp).to.have.property('user');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-auth-token",
+                "value": "{{token}}"
+              }
+            ],
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-points/{{knowledgePointId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-points", "{{knowledgePointId}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "更新知识点",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 验证token和知识点ID是否存在",
+              "const token = pm.collectionVariables.get('token');",
+              "const knowledgePointId = pm.collectionVariables.get('knowledgePointId');",
+              "if (!token) {",
+              "    throw new Error('Token未找到，请先执行登录操作');",
+              "}",
+              "if (!knowledgePointId) {",
+              "    throw new Error('知识点ID未找到，请先创建知识点');",
+              "}",
+              "",
+              "// 设置x-auth-token头部",
+              "pm.request.headers.upsert({",
+              "    key: 'x-auth-token',",
+              "    value: token",
+              "});",
+              "",
+              "// 更新URL中的知识点ID",
+              "const url = pm.request.url.toString();",
+              "pm.request.url = url.replace('{{knowledgePointId}}', knowledgePointId);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 测试更新知识点响应",
+              "pm.test(\"状态码为200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"知识点更新成功\", function () {",
+              "    var responseData = pm.response.json();",
+              "    pm.expect(responseData).to.have.property('code', 0);",
+              "    pm.expect(responseData).to.have.property('msg', '更新成功');",
+              "    pm.expect(responseData).to.have.property('data');",
+              "    pm.expect(responseData.data).to.have.property('kp');",
+              "    pm.expect(responseData.data.kp).to.have.property('_id', pm.collectionVariables.get('knowledgePointId'));",
+              "    pm.expect(responseData.data.kp).to.have.property('title', '微积分基本定理 - 更新');",
+              "    pm.expect(responseData.data.kp).to.have.property('status', 'in_progress');",
+              "    pm.expect(responseData.data.kp).to.have.property('reviewList', true);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "x-auth-token",
+            "value": "{{token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"微积分基本定理 - 更新\",\n  \"content\": \"微积分基本定理描述了微分和积分之间的关系。它有两个部分：第一部分是原函数的存在性，第二部分是牛顿-莱布尼茨公式。\",\n  \"status\": \"in_progress\",\n  \"reviewList\": true\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-points/{{knowledgePointId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-points", "{{knowledgePointId}}"]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "删除知识点",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 验证token和知识点ID是否存在",
+              "const token = pm.collectionVariables.get('token');",
+              "const knowledgePointId = pm.collectionVariables.get('knowledgePointId');",
+              "if (!token) {",
+              "    throw new Error('Token未找到，请先执行登录操作');",
+              "}",
+              "if (!knowledgePointId) {",
+              "    throw new Error('知识点ID未找到，请先创建知识点');",
+              "}",
+              "",
+              "// 设置x-auth-token头部",
+              "pm.request.headers.upsert({",
+              "    key: 'x-auth-token',",
+              "    value: token",
+              "});",
+              "",
+              "// 更新URL中的知识点ID",
+              "const url = pm.request.url.toString();",
+              "pm.request.url = url.replace('{{knowledgePointId}}', knowledgePointId);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// 测试删除知识点响应",
+              "pm.test(\"状态码为200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"知识点删除成功\", function () {",
+              "    var responseData = pm.response.json();",
+              "    pm.expect(responseData).to.have.property('code', 0);",
+              "    pm.expect(responseData).to.have.property('msg', '删除成功');",
+              "});",
+              "",
+              "// 清理环境变量",
+              "pm.collectionVariables.unset('knowledgePointId');",
+              "console.log('知识点已删除，环境变量已清理');"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "x-auth-token",
+            "value": "{{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/knowledge-points/{{knowledgePointId}}",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "knowledge-points", "{{knowledgePointId}}"]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 集合级别的Pre-request脚本",
+          "console.log('开始执行Feynman学习平台自动化测试');",
+          "console.log('基础URL:', pm.collectionVariables.get('baseUrl'));",
+          "console.log('当前时间:', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// 集合级别的Tests脚本",
+          "console.log('测试完成时间: ' + new Date().toISOString());",
+          "console.log('当前集合变量:', pm.collectionVariables.toObject());"
+        ]
+      }
+    }
+  ]
+}

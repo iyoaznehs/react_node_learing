@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth'); // 引入认证中间件
 const KnowledgePoint = require('../models/KnowledgePoint');
+const AppError = require('../utils/appError')
 
 // @route   POST /api/knowledge-points
 // @desc    创建一个新的知识点
@@ -16,10 +17,18 @@ router.post('/', auth, async (req, res) => { // 在这里使用auth中间件
             user: req.user.id // 从auth中间件附加的req.user中获取用户ID
         });
         const kp = await newKp.save();
-        res.json(kp);
+        // res.json(kp);
+        res.json(
+            {
+                code : 0, 
+                msg : "添加成功",
+                data: {
+                    kp: kp
+                }
+            }
+        )
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        next(new AppError(err.message))
     }
 });
 
@@ -29,10 +38,17 @@ router.post('/', auth, async (req, res) => { // 在这里使用auth中间件
 router.get('/', auth, async (req, res) => {
     try {
         const kps = await KnowledgePoint.find({ user: req.user.id }).sort({ createdAt: -1 });
-        res.json(kps);
+        res.json(
+            {
+                code : 0, 
+                msg : "获取成功",
+                data: {
+                    kps: kps
+                }
+            }
+        );
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        next(new AppError(err.message));
     }
 });
 
@@ -40,7 +56,21 @@ router.get('/', auth, async (req, res) => {
 // @desc    获取单个知识点详情
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
-    // ... (学生可以作为练习，实现获取单个知识点的逻辑)
+    try {
+        const kp = await KnowledgePoint.findById(req.params.id);
+        if (!kp) return res.status(404).json({ msg: 'Knowledge point not found' }); 
+        // 确保是该用户自己的知识点
+        if (kp.user.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized' });
+        }
+        res.json({
+            code : 0, 
+            msg : "获取成功",
+            data: { kp: kp }
+        });
+    } catch (err) {
+        next(new AppError(err.message));
+    }
 });
 
 // @route   PUT /api/knowledge-points/:id
@@ -49,10 +79,12 @@ router.get('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
     try {
         let kp = await KnowledgePoint.findById(req.params.id);
-        if (!kp) return res.status(404).json({ msg: 'Knowledge point not found' });
+        if (!kp) {
+            throw new AppError('Knowledge point not found');
+        }
         // 确保是该用户自己的知识点
         if (kp.user.toString() !== req.user.id) {
-            return res.status(401).json({ msg: 'Not authorized' });
+            throw new AppError('Not authorized');
         }
         const { title, content, status, reviewList } = req.body;
         kp = await KnowledgePoint.findByIdAndUpdate(
@@ -60,10 +92,17 @@ router.put('/:id', auth, async (req, res) => {
             { $set: { title, content, status, reviewList } },
             { new: true } // 返回更新后的文档
         );
-        res.json(kp);
+        res.json(
+            {
+                code : 0, 
+                msg : "更新成功",
+                data: {
+                    kp: kp
+                }
+            }
+        );  
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        next(err)
     }
 });
 
@@ -78,10 +117,13 @@ router.delete('/:id', auth, async (req, res) => {
             return res.status(401).json({ msg: 'Not authorized' });
         }
         await KnowledgePoint.findByIdAndDelete(req.params.id);
-        res.json({ msg: 'Knowledge point removed' });
+        res.json(
+            { code : 0, 
+              msg : "删除成功"
+            }
+        );
     } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
+        next(new AppError(err.message));
     }
 });
 
