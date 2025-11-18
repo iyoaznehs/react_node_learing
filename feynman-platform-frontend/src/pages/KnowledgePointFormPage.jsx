@@ -4,16 +4,43 @@ import { useParams, useNavigate } from 'react-router-dom';
 import apiClient from '../api/axios';
 import ReactQuill from 'react-quill'; // 引入ReactQuill
 import 'react-quill/dist/quill.snow.css'; // 引入默认的雪花主题样式
+import { gfm } from 'turndown-plugin-gfm';
+import TurndownService from 'turndown';
+
+
 
 function KnowledgePointFormPage() {
     const [title, setTitle] = useState('');
-    const [content, setContent] = useState(''); // content现在将存储HTML
+    const [content, setContent] = useState(''); // content存储Markdown内容
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const { id } = useParams();
     const navigate = useNavigate();
     const isEditing = Boolean(id);
+
+    const turndownService = new TurndownService({
+      emDelimiter: '*', // 强调使用星号
+      codeBlockStyle: 'fenced', // 代码块使用围栏式
+      fence: '```', // 使用三个反引号
+      headingStyle: 'atx', // 标题使用 # 号
+      bulletListMarker: '-', // 无序列表使用短横线
+      // 关键：禁用转义
+      escape: function(text) {
+        return text; // 直接返回原文本，不进行转义
+      }
+    });
+    // 使用 GitHub Flavored Markdown 插件
+    turndownService.use(gfm);
+
+    turndownService.addRule('quillCodeBlock', {
+      filter: (node) => {
+        return node.nodeName === 'PRE' && node.className === 'ql-syntax';
+      },
+      replacement: (content) => {
+        return '```\n' + content + '\n```\n';
+      }
+    });
 
     // ... (useEffect to fetchKp remains the same)
     //新增：如果是编辑模式，组件挂载时从后端拉取数据并填充表单
@@ -22,7 +49,7 @@ function KnowledgePointFormPage() {
         const fetchKp = async () => {
             try {
                 const res = await apiClient.get(`/knowledge-points/${id}`);
-                const kp = res.data;
+                const kp = res.data.data.kp;
                 setTitle(kp.title || '');
                 setContent(kp.content || '');
             } catch (err) {
@@ -53,9 +80,11 @@ function KnowledgePointFormPage() {
             return;
         }
 
-        // 注意：content现在是HTML，后端需要能处理HTML
+        // 注意：content现在是HTML，使用turndown转换为markdown格式即可
         const kpData = { title: title.trim(), content: content.trim() };
-        
+        const markdown = turndownService.turndown(kpData.content);
+        kpData.content = markdown
+        console.log(kpData.content)
         try {
             let response;
             if (isEditing) {
@@ -163,14 +192,8 @@ function KnowledgePointFormPage() {
                 </div>
                 <div style={{ marginTop: '1rem', marginBottom: '1rem' }}>
                     <label>内容:</label>
-                    {/* 将 textarea 替换为 ReactQuill */}
-                    <ReactQuill 
-                        theme="snow" 
-                        value={content} 
-                        onChange={setContent} 
-                        style={{ height: '300px' }} 
-                        readOnly={loading}
-                    />
+                                        {/* 将 textarea 替换为 ReactQuill */}
+                    <ReactQuill theme="snow" value={content} onChange={setContent} style={{ height: '300px' }} />
                 </div>
                 <button 
                     type="submit" 

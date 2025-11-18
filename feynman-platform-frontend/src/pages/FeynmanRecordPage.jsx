@@ -45,7 +45,7 @@ function FeynmanRecordPage() {
             setTranscribedText(response.data.result);
         } catch (error) {
             console.error('上传或转录失败', error);
-            setTranscribedText('转录失败，请重试。');
+            setTranscribedText('转录失败，请重试。 ${error.message || error.toString()}');
         } finally {
             setIsUploading(false);
         }
@@ -54,7 +54,16 @@ function FeynmanRecordPage() {
     // 使用Hook，在停止时自动上传
     const { status: recStatus, startRecording: recStart, stopRecording: recStop, mediaBlobUrl: recUrl } = useReactMediaRecorder({ 
       audio: true,
+      onStart: () => {
+        console.log("Kaishi ")
+      },
+      onError: (error) => {
+        console.log("==========")    
+        console.error('录制错误:', error);
+        console.log("==========")
+        },
       onStop: (blobUrl) => {
+        console.log("停")
         uploadAudio(blobUrl);
       }
     });

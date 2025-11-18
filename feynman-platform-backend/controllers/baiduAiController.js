@@ -25,7 +25,7 @@ exports.transcribeAudio = async (req, res, next) => {
         const result = await client.recognize(audioBuffer, 'wav', 16000, {
             dev_pid: 1537,
         });
-
+        console.log("ERROR ID IS : " + result)
         console.log('Baidu ASR Result:', result);
 
         // 检查返回结果
@@ -42,6 +42,8 @@ exports.transcribeAudio = async (req, res, next) => {
         }
 
     } catch (error) {
-        next(error);
+        //next(error);
+        console.error('Error calling Baidu ASR API:', error);
+        res.status(500).send('Server error during transcription.');
     }
 };
