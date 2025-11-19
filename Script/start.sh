@@ -9,7 +9,10 @@ echo "后端路径为: ${backend_root}"
 frontend_root=${root}feynman-platform-frontend
 echo "前端路径为: $frontend_root"
 echo "ready!"
-
+# 这里得来一个前端依赖校验吧,maybe
+# cd ${frontend_root}
+# $(npm install)
+# cd ${script_root}
 # ------------------Run--------------------
 function run_backend {
     echo "启动后端项目: "

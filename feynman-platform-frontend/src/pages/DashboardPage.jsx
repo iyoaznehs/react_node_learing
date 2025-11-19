@@ -2,12 +2,13 @@
 import { useState, useEffect } from 'react';
 import apiClient from '../api/axios';
 import { Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
-import rehypeKatex from 'rehype-katex';
+import MDEditor from '@uiw/react-md-editor';
+import Markdown from '@uiw/react-markdown-preview';
+
+import 'katex/dist/katex.css';
 import 'katex/dist/katex.min.css'; // 引入KaTeX的CSS样式
-import mermaid from 'mermaid';
+import MermaidBlock from '../components/mermaid';
+import MathMarkdown from '../components/MathMarkdown';
 
 
 
@@ -43,23 +44,6 @@ function DashboardPage() {
 
         fetchKnowledgePoints();
     }, []); // 第二个参数是依赖数组，空数组[]表示这个effect只在组件首次挂载时运行一次
-
-    // 初始化Mermaid并处理内容渲染后的重新解析
-    useEffect(() => {
-        mermaid.initialize({ 
-            startOnLoad: true, 
-            theme: 'default',
-            securityLevel: 'loose',
-        });
-        
-        // 在内容渲染后重新运行Mermaid解析
-        if (selectedKp) {
-            setTimeout(() => {
-                mermaid.contentLoaded();
-            }, 100);
-        }
-    }, [selectedKp, knowledgePoints]); // 当选中知识点或知识点列表变化时重新运行
-
     // 新增：删除知识点处理函数
     const handleDelete = async (id) => {
         if (window.confirm('你确定要删除这个知识点吗？')) {
@@ -84,9 +68,9 @@ function DashboardPage() {
         <div>
             <h1>我的知识点</h1>
             <Link to="/kp/new">
-              <button>+ 新建知识点</button>
+                <button>+ 新建知识点</button>
             </Link>
-            
+
             <div style={{ display: 'flex', marginTop: '20px', gap: '20px' }}>
                 {/* 左侧知识点标题列表 */}
                 <div style={{ flex: '0 0 300px', border: '1px solid #ddd', borderRadius: '8px', padding: '15px', maxHeight: '600px', overflowY: 'auto' }}>
@@ -96,11 +80,11 @@ function DashboardPage() {
                     ) : (
                         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                             {knowledgePoints.map((kp) => (
-                                <li 
-                                    key={kp._id} 
-                                    style={{ 
-                                        padding: '10px', 
-                                        marginBottom: '8px', 
+                                <li
+                                    key={kp._id}
+                                    style={{
+                                        padding: '10px',
+                                        marginBottom: '8px',
                                         border: selectedKp && selectedKp._id === kp._id ? '2px solid #007bff' : '1px solid #eee',
                                         borderRadius: '4px',
                                         backgroundColor: selectedKp && selectedKp._id === kp._id ? '#e6f3ff' : '#f9f9f9',
@@ -122,14 +106,11 @@ function DashboardPage() {
                         <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px' }}>
                             <h2 style={{ marginTop: 0 }}>{selectedKp.title}</h2>
                             <div className="markdown-content" style={{ background: '#f9f9f9', padding: '15px', borderRadius: '5px', marginBottom: '15px' }}>
-                                <ReactMarkdown 
-                                    remarkPlugins={[remarkGfm, remarkMath]}
-                                    rehypePlugins={[rehypeKatex]}
-                                >
-                                    {selectedKp.content}
-                                </ReactMarkdown>
+                                <div className="markdown-content" >
+                                    <MathMarkdown source={selectedKp.content} />
+                                </div>
                             </div>
-                            
+
                             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                                 <Link to={`/kp/edit/${selectedKp._id}`}>
                                     <button style={{ padding: '8px 16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
@@ -141,8 +122,8 @@ function DashboardPage() {
                                         开始复述
                                     </button>
                                 </Link>
-                                <button 
-                                    onClick={() => handleDelete(selectedKp._id)} 
+                                <button
+                                    onClick={() => handleDelete(selectedKp._id)}
                                     style={{ padding: '8px 16px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
                                 >
                                     删除
@@ -150,12 +131,12 @@ function DashboardPage() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            justifyContent: 'center', 
-                            height: '300px', 
-                            border: '1px dashed #ddd', 
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            height: '300px',
+                            border: '1px dashed #ddd',
                             borderRadius: '8px',
                             color: '#666'
                         }}>
@@ -168,3 +149,9 @@ function DashboardPage() {
     );
 }
 export default DashboardPage;
+
+
+// 参考和使用了这个： https://uiwjs.github.io/react-md-editor/ 库
+// 但是编辑的时候是左右两边，做编辑右预览，而这个组件实现只预览， 使用了库里面preview这个版本组件
+// 所以行内公式渲染有点问题， 解决方案（目前） ： 我让AI帮写了一个新组件， 在行内进行正则匹配， MathMarkdown
+// 整个项目很混乱。。。
