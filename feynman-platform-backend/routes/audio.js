@@ -4,7 +4,7 @@ const router = express.Router();
 const multer = require('multer');
 const auth = require('../middleware/auth');
 // 引入百度AI的控制器
-const { transcribeAudio, evaluateFeynmanAttempt } = require('../controllers/baiduAiController');
+const { transcribeAudio, evaluateFeynmanAttempt, getTaskStatus } = require('../controllers/baiduAiController');
 
 // 配置multer
 // 我们这里使用内存存储，因为只是临时中转给百度AI，不需要存到服务器硬盘
@@ -17,7 +17,8 @@ router.post(
     '/transcribe',
     auth,
     upload.single('audio'), // 'audio' 必须和前端 FormData.append 的字段名一致
-    transcribeAudio // 将主要逻辑放到Controller中
+    transcribeAudio, // 将主要逻辑放到Controller中
+
 );
 
 // @route   POST /api/audio/evaluate
@@ -25,5 +26,9 @@ router.post(
 // @access  Private
 
 router.post('/evaluate', auth, evaluateFeynmanAttempt);
+
+const { generateQuestion } = require('../controllers/baiduAiController');
+
+router.post('/generate-question', auth, generateQuestion);
 
 module.exports = router;

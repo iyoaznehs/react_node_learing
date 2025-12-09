@@ -101,6 +101,7 @@ function DashboardPage() {
                 </div>
 
                 {/* 右侧知识点详细内容 */}
+                
                 <div style={{ flex: 1, minHeight: '500px' }}>
                     {selectedKp ? (
                         <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '20px' }}>
@@ -122,6 +123,7 @@ function DashboardPage() {
                                         开始复述
                                     </button>
                                 </Link>
+                                <Link to={`/quiz/${selectedKp._id}`}>开始测评</Link>
                                 <button
                                     onClick={() => handleDelete(selectedKp._id)}
                                     style={{ padding: '8px 16px', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}

@@ -72,8 +72,7 @@ function FeynmanRecordPage() {
             }
             setTranscribedText(response.data.result);
             // 如果转录成功且有结果，触发AI评价
-            // 测试： 暂时不需要有内容
-            if (!response.data.result) {
+            if (response.data.result) {
                 getAiEvaluation(response.data.result); 
                 }
         } catch (error) {
