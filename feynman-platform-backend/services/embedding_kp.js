@@ -7,7 +7,7 @@ const path = require('path');
 
 const VECTOR_STORE_PATH = path.join(__dirname, '../vector_store');
 
-// 初始化百度千帆的Embedding模型
+// 初始化百度千帆（千帆 就是 shit）的Embedding模型
 const embeddings = new AlibabaTongyiEmbeddings({
     apiKey: process.env.TONGYI_API_KEY
 })
